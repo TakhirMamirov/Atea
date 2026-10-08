@@ -30,26 +30,28 @@ if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
     await app.Services.MigrateDatabaseAsync();
 }
 
+// Middleware, in pipeline order.
+app.UseSecurityHeaders();
 app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-else
+if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
-
-app.UseSecurityHeaders();
 
 // Serves the compiled React app (copied into wwwroot at publish time).
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.UseRateLimiter();
+
+// Endpoints.
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
 
 app.MapControllers().RequireRateLimiting(ApiRateLimiting.PolicyName);
 app.MapHealthChecks("/health");

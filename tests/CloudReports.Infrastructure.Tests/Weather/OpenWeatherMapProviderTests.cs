@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using CloudReports.Application.Abstractions;
 using CloudReports.Infrastructure.Weather;
 using Microsoft.Extensions.Options;
 
@@ -30,7 +31,7 @@ public sealed class OpenWeatherMapProviderTests
         Assert.True(result.IsSuccess);
         Assert.Equal(200, result.HttpStatusCode);
         Assert.Equal(LondonPayload, result.RawPayload);
-        var observation = Assert.IsType<Application.Abstractions.WeatherObservation>(result.Observation);
+        var observation = Assert.IsType<WeatherObservation>(result.Observation);
         Assert.Equal("London", observation.City);
         Assert.Equal("GB", observation.Country);
         Assert.Equal(14.2, observation.Temperature);
@@ -123,19 +124,13 @@ public sealed class OpenWeatherMapProviderTests
         return new OpenWeatherMapProvider(client, Options.Create(options));
     }
 
-    private sealed class StubHandler : HttpMessageHandler
+    /// <summary>Returns a fixed response, or fails with the given exception (network error, timeout).</summary>
+    private sealed class StubHandler(HttpStatusCode statusCode, string body, Exception? exception = null) : HttpMessageHandler
     {
-        private readonly HttpStatusCode _statusCode;
-        private readonly string _body = string.Empty;
-        private readonly Exception? _exception;
-
-        public StubHandler(HttpStatusCode statusCode, string body)
+        public StubHandler(Exception exception)
+            : this(HttpStatusCode.OK, string.Empty, exception)
         {
-            _statusCode = statusCode;
-            _body = body;
         }
-
-        public StubHandler(Exception exception) => _exception = exception;
 
         public Uri? LastRequestUri { get; private set; }
 
@@ -143,14 +138,14 @@ public sealed class OpenWeatherMapProviderTests
         {
             LastRequestUri = request.RequestUri;
 
-            if (_exception is not null)
+            if (exception is not null)
             {
-                return Task.FromException<HttpResponseMessage>(_exception);
+                return Task.FromException<HttpResponseMessage>(exception);
             }
 
-            return Task.FromResult(new HttpResponseMessage(_statusCode)
+            return Task.FromResult(new HttpResponseMessage(statusCode)
             {
-                Content = new StringContent(_body, Encoding.UTF8, "application/json"),
+                Content = new StringContent(body, Encoding.UTF8, "application/json"),
             });
         }
     }

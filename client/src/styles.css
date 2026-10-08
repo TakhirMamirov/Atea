@@ -10,6 +10,9 @@
   --ok-bg: #eaf3ec;
   --fail: #9b2c2c;
   --fail-bg: #f8eaea;
+  --fail-border: #e4c4c4;
+  --hover: #f0f2f4;
+  --surface-subtle: #fafbfb;
   --radius: 4px;
 
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -168,7 +171,7 @@ select {
 
 .button:hover:not(:disabled),
 .segment:hover {
-  background: #f0f2f4;
+  background: var(--hover);
 }
 
 .button:disabled {
@@ -236,7 +239,7 @@ select {
 .segment.active {
   background: var(--text);
   border-color: var(--text);
-  color: #fff;
+  color: var(--surface);
   position: relative;
 }
 
@@ -267,7 +270,7 @@ select {
 }
 
 .notice-error {
-  border-color: #e4c4c4;
+  border-color: var(--fail-border);
   background: var(--fail-bg);
   color: var(--fail);
 }
@@ -294,7 +297,7 @@ select {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
-  background: #fafbfb;
+  background: var(--surface-subtle);
   white-space: nowrap;
 }
 
@@ -303,7 +306,7 @@ select {
 }
 
 .table tbody tr:hover {
-  background: #fafbfb;
+  background: var(--surface-subtle);
 }
 
 .num {

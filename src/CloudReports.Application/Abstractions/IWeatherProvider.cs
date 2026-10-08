@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace CloudReports.Application.Abstractions;
 
 /// <summary>
@@ -24,6 +26,9 @@ public sealed record WeatherFetchResult
 {
     private WeatherFetchResult() { }
 
+    /// <summary>When <c>true</c>, <see cref="RawPayload"/> and <see cref="Observation"/> are set; otherwise <see cref="Error"/> is.</summary>
+    [MemberNotNullWhen(true, nameof(RawPayload), nameof(Observation))]
+    [MemberNotNullWhen(false, nameof(Error))]
     public bool IsSuccess { get; private init; }
 
     public int? HttpStatusCode { get; private init; }

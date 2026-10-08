@@ -68,8 +68,9 @@ internal sealed partial class WeatherIngestionService(
             ErrorMessage = Truncate(result.Error, FetchLog.MaxErrorMessageLength),
         };
 
-        if (result is { IsSuccess: true, Observation: { } observation, RawPayload: { } payload })
+        if (result.IsSuccess)
         {
+            var observation = result.Observation;
             var reading = new WeatherReading
             {
                 City = observation.City,
@@ -79,7 +80,7 @@ internal sealed partial class WeatherIngestionService(
                 TemperatureMax = observation.TemperatureMax,
                 ObservedAtUtc = observation.ObservedAtUtc,
                 FetchedAtUtc = attemptedAt,
-                RawPayload = payload,
+                RawPayload = result.RawPayload,
             };
 
             readings.Add(reading);
@@ -94,7 +95,7 @@ internal sealed partial class WeatherIngestionService(
     }
 
     private static string? Truncate(string? value, int maxLength) =>
-        value is { Length: > 0 } && value.Length > maxLength ? value[..maxLength] : value;
+        value?.Length > maxLength ? value[..maxLength] : value;
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Weather ingestion finished: {Succeeded} succeeded, {Failed} failed")]
     private partial void LogIngestionFinished(int succeeded, int failed);

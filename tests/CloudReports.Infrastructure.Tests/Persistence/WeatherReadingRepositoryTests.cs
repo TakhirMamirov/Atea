@@ -1,4 +1,3 @@
-using CloudReports.Application.Abstractions;
 using CloudReports.Domain.Entities;
 using CloudReports.Infrastructure.Persistence.Repositories;
 
@@ -19,7 +18,7 @@ public sealed class WeatherReadingRepositoryTests
             repository.Add(Reading("Rome", Now.AddMinutes(-1)));
             repository.Add(Reading("London", Now.AddMinutes(-2)));
             repository.Add(Reading("Riga", Now.AddMinutes(5)));
-            await ((IUnitOfWork)context).SaveChangesAsync(TestContext.Current.CancellationToken);
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         await using var readContext = db.CreateContext();

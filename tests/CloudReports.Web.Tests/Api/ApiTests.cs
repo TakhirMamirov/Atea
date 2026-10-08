@@ -79,6 +79,23 @@ public sealed class ApiTests : IClassFixture<ApiTests.ApiFactory>
     {
         var response = await _client.GetAsync(new Uri("/api/weather", UriKind.Relative), TestContext.Current.CancellationToken);
 
+        AssertSecurityHeaders(response);
+    }
+
+    [Fact]
+    public async Task UnhandledError_ReturnsProblemDetailsWithSecurityHeaders()
+    {
+        var response = await _client.GetAsync(
+            new Uri($"/api/weather?from={ApiFactory.FailingYear}-01-01T00:00:00Z&to={ApiFactory.FailingYear}-01-02T00:00:00Z", UriKind.Relative),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        AssertSecurityHeaders(response);
+    }
+
+    private static void AssertSecurityHeaders(HttpResponseMessage response)
+    {
         Assert.Equal("nosniff", Assert.Single(response.Headers.GetValues("X-Content-Type-Options")));
         Assert.Equal("DENY", Assert.Single(response.Headers.GetValues("X-Frame-Options")));
         Assert.Equal("no-referrer", Assert.Single(response.Headers.GetValues("Referrer-Policy")));
@@ -88,6 +105,9 @@ public sealed class ApiTests : IClassFixture<ApiTests.ApiFactory>
     /// <summary>Hosts the app with fake application services and no database.</summary>
     public class ApiFactory : WebApplicationFactory<Program>
     {
+        /// <summary>Report requests for this year throw, to exercise the error pipeline.</summary>
+        public const int FailingYear = 2000;
+
         public IWeatherReportService ReportService { get; } = Substitute.For<IWeatherReportService>();
 
         public IFetchLogQueryService LogQueryService { get; } = Substitute.For<IFetchLogQueryService>();
@@ -95,7 +115,9 @@ public sealed class ApiTests : IClassFixture<ApiTests.ApiFactory>
         public ApiFactory()
         {
             ReportService.GetReportAsync(Arg.Any<DateRange>(), Arg.Any<CancellationToken>())
-                .Returns(c => new WeatherReport(c.Arg<DateRange>().FromUtc, c.Arg<DateRange>().ToUtc, [], []));
+                .Returns(c => c.Arg<DateRange>().FromUtc.Year == FailingYear
+                    ? throw new InvalidOperationException("Simulated failure")
+                    : new WeatherReport(c.Arg<DateRange>().FromUtc, c.Arg<DateRange>().ToUtc, [], []));
             LogQueryService.GetLogsAsync(Arg.Any<FetchLogQuery>(), Arg.Any<CancellationToken>())
                 .Returns(c => new PagedResult<FetchLogDto>([], 0, c.Arg<FetchLogQuery>().Page, c.Arg<FetchLogQuery>().PageSize));
         }

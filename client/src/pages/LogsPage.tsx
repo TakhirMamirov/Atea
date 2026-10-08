@@ -15,7 +15,7 @@ type StatusFilter = '' | 'success' | 'failure'
 
 function queryFromSearchParams(params: URLSearchParams): FetchLogQuery {
   const page = Number.parseInt(params.get('page') ?? '1', 10)
-  const status = params.get('status') as StatusFilter | null
+  const status = params.get('status')
   return {
     page: Number.isFinite(page) && page > 0 ? page : 1,
     pageSize: PAGE_SIZE,
