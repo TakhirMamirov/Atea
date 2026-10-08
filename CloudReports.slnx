@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CloudReports.Application/CloudReports.Application.csproj" />
+    <Project Path="src/CloudReports.Domain/CloudReports.Domain.csproj" />
+    <Project Path="src/CloudReports.Functions/CloudReports.Functions.csproj" />
+    <Project Path="src/CloudReports.Infrastructure/CloudReports.Infrastructure.csproj" />
+    <Project Path="src/CloudReports.Web/CloudReports.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CloudReports.Application.Tests/CloudReports.Application.Tests.csproj" />
+    <Project Path="tests/CloudReports.Functions.Tests/CloudReports.Functions.Tests.csproj" />
+    <Project Path="tests/CloudReports.Infrastructure.Tests/CloudReports.Infrastructure.Tests.csproj" />
+    <Project Path="tests/CloudReports.Web.Tests/CloudReports.Web.Tests.csproj" />
+  </Folder>
+</Solution>

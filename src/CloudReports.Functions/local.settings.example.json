@@ -1,0 +1,15 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "WeatherIngestionSchedule": "0 * * * * *",
+    "WeatherIngestion__Cities__0": "London",
+    "WeatherIngestion__Cities__1": "Rome",
+    "WeatherIngestion__Cities__2": "Riga",
+    "OpenWeatherMap__ApiKey": "<your-openweathermap-api-key>"
+  },
+  "ConnectionStrings": {
+    "CloudReports": "Server=(localdb)\\MSSQLLocalDB;Database=CloudReports;Trusted_Connection=True;TrustServerCertificate=True"
+  }
+}

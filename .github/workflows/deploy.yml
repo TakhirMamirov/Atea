@@ -1,0 +1,174 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: true
+  # Existing resource group that receives all Cloud Reports resources (its region is used for them).
+  # Override with the AZURE_RESOURCE_GROUP repository variable if needed.
+  AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || 'TEST' }}
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  package:
+    name: Package
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Build React app
+        working-directory: client
+        run: |
+          npm ci
+          npm run build
+
+      - name: Publish web app (API + SPA)
+        run: |
+          dotnet publish src/CloudReports.Web --configuration Release --output publish/web
+          mkdir -p publish/web/wwwroot
+          cp -r client/dist/. publish/web/wwwroot/
+
+      - name: Publish function app
+        run: dotnet publish src/CloudReports.Functions --configuration Release --output publish/functions
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web
+          path: publish/web
+          include-hidden-files: true
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: functions
+          path: publish/functions
+          include-hidden-files: true
+
+  infrastructure:
+    name: Provision infrastructure
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write # OIDC federated login to Azure
+    outputs:
+      webAppName: ${{ steps.deploy.outputs.webAppName }}
+      webAppUrl: ${{ steps.deploy.outputs.webAppUrl }}
+      functionAppName: ${{ steps.deploy.outputs.functionAppName }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify target resource group
+        run: |
+          if ! location=$(az group show --name "$AZURE_RESOURCE_GROUP" --query location -o tsv 2>/dev/null); then
+            echo "::error::Resource group '$AZURE_RESOURCE_GROUP' was not found or the deployment identity has no access to it."
+            exit 1
+          fi
+          echo "Deploying into resource group '$AZURE_RESOURCE_GROUP' ($location)"
+
+      - name: Deploy Bicep
+        id: deploy
+        env:
+          OPENWEATHERMAP_API_KEY: ${{ secrets.OPENWEATHERMAP_API_KEY }}
+        run: |
+          outputs=$(az deployment group create \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "cloudreports-${{ github.run_number }}" \
+            --parameters infra/main.bicepparam \
+            --query properties.outputs --output json)
+          echo "webAppName=$(jq -r .webAppName.value <<< "$outputs")" >> "$GITHUB_OUTPUT"
+          echo "webAppUrl=$(jq -r .webAppUrl.value <<< "$outputs")" >> "$GITHUB_OUTPUT"
+          echo "functionAppName=$(jq -r .functionAppName.value <<< "$outputs")" >> "$GITHUB_OUTPUT"
+
+  deploy-web:
+    name: Deploy web app
+    needs: [package, infrastructure]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ needs.infrastructure.outputs.webAppUrl }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: web
+          path: web
+
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ needs.infrastructure.outputs.webAppName }}
+          package: web
+
+      - name: Smoke test
+        run: |
+          for i in $(seq 1 30); do
+            if curl --fail --silent "${{ needs.infrastructure.outputs.webAppUrl }}/health"; then echo; exit 0; fi
+            sleep 10
+          done
+          echo "Health check did not succeed" >&2
+          exit 1
+
+  # Deployed after the web app so the database schema (migrated on web start-up) exists first.
+  deploy-functions:
+    name: Deploy function app
+    needs: [package, infrastructure, deploy-web]
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: functions
+          path: functions
+
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ needs.infrastructure.outputs.functionAppName }}
+          package: functions
+          sku: flexconsumption

@@ -1,0 +1,28 @@
+# Optional alternative to LocalDB + Azurite (e.g. on macOS/Linux). Start with: docker compose up -d
+# Then point the apps at this SQL Server, e.g.
+#   ConnectionStrings__CloudReports="Server=localhost,1433;Database=CloudReports;User Id=sa;Password=CloudReports!Dev123;TrustServerCertificate=True"
+services:
+  sql:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: cloudreports-sql
+    environment:
+      ACCEPT_EULA: "Y"
+      # Local-only password for this container.
+      MSSQL_SA_PASSWORD: "CloudReports!Dev123"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql-data:/var/opt/mssql
+
+  # Storage emulator required by the Azure Functions host (timer trigger locks).
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: cloudreports-azurite
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --skipApiVersionCheck
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+
+volumes:
+  sql-data:
