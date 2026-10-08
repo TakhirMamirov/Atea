@@ -74,7 +74,19 @@ public sealed class ApiTests : IClassFixture<ApiTests.ApiFactory>
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    public sealed class ApiFactory : WebApplicationFactory<Program>
+    [Fact]
+    public async Task Responses_IncludeSecurityHeaders()
+    {
+        var response = await _client.GetAsync(new Uri("/api/weather", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        Assert.Equal("nosniff", Assert.Single(response.Headers.GetValues("X-Content-Type-Options")));
+        Assert.Equal("DENY", Assert.Single(response.Headers.GetValues("X-Frame-Options")));
+        Assert.Equal("no-referrer", Assert.Single(response.Headers.GetValues("Referrer-Policy")));
+        Assert.Contains("default-src 'self'", Assert.Single(response.Headers.GetValues("Content-Security-Policy")), StringComparison.Ordinal);
+    }
+
+    /// <summary>Hosts the app with fake application services and no database.</summary>
+    public class ApiFactory : WebApplicationFactory<Program>
     {
         public IWeatherReportService ReportService { get; } = Substitute.For<IWeatherReportService>();
 

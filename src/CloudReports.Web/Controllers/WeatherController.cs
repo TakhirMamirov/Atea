@@ -22,10 +22,12 @@ public sealed class WeatherController(IWeatherReportService reportService, TimeP
     /// A date can't be parsed, <paramref name="from"/> is not earlier than <paramref name="to"/>,
     /// or the range is longer than 31 days.
     /// </response>
+    /// <response code="429">Too many requests from this client; retry after a minute.</response>
     /// <response code="500">Unexpected server error, e.g. the database is unavailable.</response>
     [HttpGet]
     [ProducesResponseType<WeatherReport>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<WeatherReport>> GetReport(
         [FromQuery] DateTimeOffset? from,

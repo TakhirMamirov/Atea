@@ -33,6 +33,10 @@ export function buildQueryString(query: QueryParams = {}): string {
 }
 
 async function toApiError(response: Response): Promise<ApiError> {
+  if (response.status === 429) {
+    return new ApiError('Too many requests. Please wait a minute and try again.', response.status)
+  }
+
   let message = `Request failed with status ${response.status}`
   try {
     const problem = (await response.json()) as ProblemDetails

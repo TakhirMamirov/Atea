@@ -47,6 +47,16 @@ describe('createFetchHttpClient', () => {
     await expect(client.getJson('/weather')).rejects.toThrow('Request failed with status 502')
   })
 
+  it('explains a rate-limit rejection in plain words', async () => {
+    const fetchFn = vi.fn<typeof fetch>().mockResolvedValue(new Response('{"status":429}', { status: 429 }))
+    const client = createFetchHttpClient('/api', fetchFn)
+
+    await expect(client.getJson('/weather')).rejects.toMatchObject({
+      status: 429,
+      message: 'Too many requests. Please wait a minute and try again.',
+    })
+  })
+
   it('fails with a timeout message when the server does not respond in time', async () => {
     const client = createFetchHttpClient('/api', neverRespondingFetch(), 20)
 

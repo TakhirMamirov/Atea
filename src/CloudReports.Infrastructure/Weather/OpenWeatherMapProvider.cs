@@ -65,6 +65,10 @@ internal sealed class OpenWeatherMapProvider(HttpClient httpClient, IOptions<Ope
         return WeatherFetchResult.Success(statusCode, body, observation);
     }
 
+    /// <summary>
+    /// Uses the provider's error message when the body has the documented shape; otherwise only the HTTP status
+    /// text, so arbitrary bodies (e.g. a proxy's HTML error page) never end up in the logs.
+    /// </summary>
     private static string DescribeError(string body, string? reasonPhrase)
     {
         try
@@ -80,6 +84,6 @@ internal sealed class OpenWeatherMapProvider(HttpClient httpClient, IOptions<Ope
             // Fall through: body is not the documented error shape.
         }
 
-        return string.IsNullOrWhiteSpace(body) ? reasonPhrase ?? "Unknown error" : body;
+        return reasonPhrase ?? "Unknown error";
     }
 }

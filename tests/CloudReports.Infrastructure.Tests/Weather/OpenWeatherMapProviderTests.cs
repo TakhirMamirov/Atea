@@ -66,6 +66,19 @@ public sealed class OpenWeatherMapProviderTests
         Assert.Null(result.RawPayload);
     }
 
+    [Fact]
+    public async Task GetCurrentWeatherAsync_NonJsonErrorBody_StoresOnlyStatusText()
+    {
+        var handler = new StubHandler(HttpStatusCode.BadGateway, "<html><body>Upstream proxy error ...</body></html>");
+        var sut = CreateSut(handler);
+
+        var result = await sut.GetCurrentWeatherAsync("Riga", TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(502, result.HttpStatusCode);
+        Assert.Equal("Bad Gateway", result.Error);
+    }
+
     [Theory]
     [InlineData("not json")]
     [InlineData("""{"cod":200}""")]

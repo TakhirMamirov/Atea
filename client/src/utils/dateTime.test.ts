@@ -48,6 +48,13 @@ describe('range selection', () => {
     expect(resolveRange(selection, now)).toEqual({ from: new Date('2026-10-06T12:00:00Z'), to: now })
   })
 
+  it('falls back to the 24 hour preset for an unknown preset id', () => {
+    expect(resolveRange({ kind: 'preset', presetId: 'unknown' }, now)).toEqual({
+      from: new Date('2026-10-06T12:00:00Z'),
+      to: now,
+    })
+  })
+
   it('round-trips a custom range through search params', () => {
     const selection = { kind: 'custom' as const, from: new Date('2026-10-01T00:00:00Z'), to: new Date('2026-10-02T00:00:00Z') }
     expect(selectionFromSearchParams(selectionToSearchParams(selection))).toEqual(selection)

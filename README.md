@@ -29,6 +29,7 @@ OpenWeatherMap ◄──────────────── Azure Functio
 - Long chart ranges are downsampled on the server to at most 500 points per city, keeping the min/max extremes.
 - Times are stored in UTC and shown in the viewer's local time zone.
 - No passwords in Azure: the apps use a managed identity, and the API key is kept in Key Vault.
+- The API is rate-limited per client IP (60 requests per minute), and responses carry standard security headers.
 - The database schema is created automatically when the web app starts.
 
 ## Run locally
@@ -93,4 +94,4 @@ One-time setup:
 | GET | `/api/fetch-logs` | `page`, `pageSize` (≤ 200), `city`, `isSuccess` |
 | GET | `/health` | — (checks database connectivity) |
 
-The OpenAPI document is at `/openapi/v1.json` in Development.
+The OpenAPI document is at `/openapi/v1.json` in Development. Requests over the rate limit get `429 Too Many Requests`.

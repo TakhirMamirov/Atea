@@ -61,22 +61,25 @@ export interface RangePreset {
   hours: number
 }
 
+/** Used when no range is selected, or the selected preset is unknown. */
+const DEFAULT_PRESET: RangePreset = { id: '24h', label: '24 hours', hours: 24 }
+
 export const RANGE_PRESETS: readonly RangePreset[] = [
   { id: '1h', label: 'Last hour', hours: 1 },
   { id: '6h', label: '6 hours', hours: 6 },
-  { id: '24h', label: '24 hours', hours: 24 },
+  DEFAULT_PRESET,
   { id: '7d', label: '7 days', hours: 24 * 7 },
   { id: '30d', label: '30 days', hours: 24 * 30 },
 ]
 
-export const DEFAULT_PRESET_ID = '24h'
+export const DEFAULT_PRESET_ID = DEFAULT_PRESET.id
 
 /** A range is either relative to "now" (preset, re-evaluated on refresh) or fixed. */
 export type RangeSelection = { kind: 'preset'; presetId: string } | { kind: 'custom'; from: Date; to: Date }
 
 export function resolveRange(selection: RangeSelection, now: Date = new Date()): DateRange {
   if (selection.kind === 'custom') return { from: selection.from, to: selection.to }
-  const preset = RANGE_PRESETS.find((p) => p.id === selection.presetId) ?? RANGE_PRESETS[2]
+  const preset = RANGE_PRESETS.find((p) => p.id === selection.presetId) ?? DEFAULT_PRESET
   return { from: new Date(now.getTime() - preset.hours * HOUR_MS), to: now }
 }
 
