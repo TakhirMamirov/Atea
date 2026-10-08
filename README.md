@@ -3,18 +3,6 @@
 Collects current weather for **London, Rome and Riga** from OpenWeatherMap every minute, stores the full payloads and
 every fetch attempt in Azure SQL, and presents them in a React UI with a temperature chart and a fetch-log page.
 
-| Requirement | Where |
-|---|---|
-| Azure Function, fetch 3 cities every minute | `src/CloudReports.Functions` — timer trigger `0 * * * * *` |
-| Store the full payload | `WeatherReadings.RawPayload` (unmodified JSON) |
-| Store success/failure attempt log | `FetchLogs` (status, HTTP code, duration, error) |
-| UI page with fetch logs | `/logs` — filter by city/result, paging, auto-refresh |
-| UI page with chart: min/max temp, country, city, temperature, last update | `/` — one chart with all cities (+ min/max band) and a summary table |
-| Date and time filtering of the graph | Quick ranges (1 h … 30 d) and a custom from/to picker |
-| ASP.NET Core MVC, C#, EF Core, SQL | `src/CloudReports.Web` (controllers), `src/CloudReports.Infrastructure` |
-| React + TypeScript | `client/` |
-| Unit tests | `tests/*` (xUnit v3) and `client/src/**/*.test.ts(x)` (Vitest) |
-
 ## Architecture
 
 ```
